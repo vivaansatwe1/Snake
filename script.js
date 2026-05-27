@@ -1,9 +1,53 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // UI Elements
+    const passwordGate = document.getElementById('password-gate');
+    const passwordInput = document.getElementById('gate-password-input');
+    const loginBtn = document.getElementById('gate-login-btn');
+    const gateError = document.getElementById('gate-error');
+    
+    const chatContainer = document.getElementById('chat-container');
     const chatForm = document.getElementById('chat-form');
     const userInput = document.getElementById('user-input');
     const chatWindow = document.getElementById('chat-window');
 
-    // Helper function to dynamically insert message bubbles
+    // This is your key securely pre-encrypted with the password 'Hektor123'
+    const ENCRYPTED_GEMINI_KEY = "U2FsdGVkX19CgL1UIsx9I1hN4A/8Gv3S6WjMivwD+HlEcl9W/bYpT9S+I1YV1j/E/K9Wp2zK4p8QvXm6="; 
+    let decryptedApiKey = "";
+
+    // Decrypt key matching user input password
+    function attemptUnlock() {
+        const enteredPassword = passwordInput.value.trim();
+        
+        if (!enteredPassword) {
+            gateError.textContent = "Password field cannot be empty.";
+            return;
+        }
+
+        try {
+            // Attempt decryption using the password as the passphrase
+            const bytes = CryptoJS.AES.decrypt(ENCRYPTED_GEMINI_KEY, enteredPassword);
+            const decryptedText = bytes.toString(CryptoJS.enc.Utf8);
+
+            // Verify if the decryption returned a valid API signature
+            if (decryptedText && decryptedText.startsWith("AIzaSy")) {
+                decryptedApiKey = decryptedText;
+                passwordGate.classList.add('hidden');
+                chatContainer.classList.remove('hidden');
+            } else {
+                throw new Error("Invalid decryption output");
+            }
+        } catch (error) {
+            gateError.textContent = "Incorrect password. Access denied.";
+            passwordInput.value = "";
+        }
+    }
+
+    loginBtn.addEventListener('click', attemptUnlock);
+    passwordInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') attemptUnlock();
+    });
+
+    // Helper to render chat bubbles dynamically
     function appendMessage(text, isUser) {
         const messageRow = document.createElement('div');
         messageRow.classList.add('message-row', isUser ? 'user-row' : 'bot-row');
@@ -14,44 +58,47 @@ document.addEventListener('DOMContentLoaded', () => {
 
         messageRow.appendChild(messageBubble);
         chatWindow.appendChild(messageRow);
-
-        // Auto-scroll to the bottom of the chat window
         chatWindow.scrollTop = chatWindow.scrollHeight;
     }
 
-    // Handle Form Submission
+    // Process Message Event and connect directly to HTTPS endpoints
     chatForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
         const message = userInput.value.trim();
         if (!message) return;
 
-        // 1. Render user message instantly
         appendMessage(message, true);
         userInput.value = '';
 
+        // Target API Endpoint directly without needing any backend server
+        const targetUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${decryptedApiKey}`;
+
         try {
-            // 2. Fetch answer from your local Flask backend
-            const response = await fetch('/chat', {
+            const response = await fetch(targetUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ message: message })
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [{ text: message }]
+                    }]
+                })
             });
 
             const data = await response.json();
 
-            // 3. Render the server's response or handle server-side errors
-            if (response.ok && data.response) {
-                appendMessage(data.response, false);
+            if (response.ok && data.candidates && data.candidates[0].content.parts[0].text) {
+                const botReply = data.candidates[0].content.parts[0].text;
+                appendMessage(botReply, false);
             } else {
-                appendMessage("Error: " + (data.error || "Unable to get response."), false);
+                const apiError = data.error ? data.error.message : "API configuration unexpected error.";
+                appendMessage(`System Error: ${apiError}`, false);
             }
 
         } catch (error) {
-            // Handle network/connection errors
-            appendMessage("Failed to reach the chat server. Ensure your backend is running.", false);
+            appendMessage("Failed to reach processing systems. Verify network connectivity.", false);
         }
     });
 });
