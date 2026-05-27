@@ -3,21 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Chat Client</title>
+    <title>Snake AI</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 </head>
 <body>
 
-    <div class="chat-container">
+    <div id="password-gate" class="overlay">
+        <div class="gate-box">
+            <h2>Snake AI Access</h2>
+            <p>Please enter your access password to decrypt system parameters.</p>
+            <input type="password" id="gate-password-input" placeholder="Password">
+            <button id="gate-login-btn">Unlock Systems</button>
+            <p id="gate-error" class="error-text"></p>
+        </div>
+    </div>
+
+    <div id="chat-container" class="chat-container hidden">
         
         <header class="chat-header">
-            <h1>AI Assistant</h1>
+            <h1>Snake AI</h1>
         </header>
 
         <main id="chat-window" class="chat-window">
             <div class="message-row bot-row">
                 <div class="message-bubble bot-bubble">
-                    Hello! How can I help you today?
+                    Snake AI online. Core modules decrypted. System independent. How can I assist you?
                 </div>
             </div>
         </main>
