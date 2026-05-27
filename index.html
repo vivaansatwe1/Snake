@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat Client</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="chat-container">
+        
+        <header class="chat-header">
+            <h1>AI Assistant</h1>
+        </header>
+
+        <main id="chat-window" class="chat-window">
+            <div class="message-row bot-row">
+                <div class="message-bubble bot-bubble">
+                    Hello! How can I help you today?
+                </div>
+            </div>
+        </main>
+
+        <footer class="chat-footer">
+            <form id="chat-form">
+                <input type="text" id="user-input" placeholder="Type your message here..." required autocomplete="off">
+                <button type="submit" id="send-btn">Send</button>
+            </form>
+        </footer>
+
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
