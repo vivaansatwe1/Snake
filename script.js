@@ -10,11 +10,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const userInput = document.getElementById('user-input');
     const chatWindow = document.getElementById('chat-window');
 
-    // This is your key securely pre-encrypted with the password 'Hektor123'
+    // Your key securely encrypted with 'Hektor123' 
     const ENCRYPTED_GEMINI_KEY = "U2FsdGVkX19CgL1UIsx9I1hN4A/8Gv3S6WjMivwD+HlEcl9W/bYpT9S+I1YV1j/E/K9Wp2zK4p8QvXm6="; 
     let decryptedApiKey = "";
 
-    // Decrypt key matching user input password
     function attemptUnlock() {
         const enteredPassword = passwordInput.value.trim();
         
@@ -24,17 +23,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            // Attempt decryption using the password as the passphrase
             const bytes = CryptoJS.AES.decrypt(ENCRYPTED_GEMINI_KEY, enteredPassword);
             const decryptedText = bytes.toString(CryptoJS.enc.Utf8);
 
-            // Verify if the decryption returned a valid API signature
             if (decryptedText && decryptedText.startsWith("AIzaSy")) {
                 decryptedApiKey = decryptedText;
                 passwordGate.classList.add('hidden');
                 chatContainer.classList.remove('hidden');
             } else {
-                throw new Error("Invalid decryption output");
+                throw new Error("Bad decryption mapping");
             }
         } catch (error) {
             gateError.textContent = "Incorrect password. Access denied.";
@@ -47,7 +44,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.key === 'Enter') attemptUnlock();
     });
 
-    // Helper to render chat bubbles dynamically
     function appendMessage(text, isUser) {
         const messageRow = document.createElement('div');
         messageRow.classList.add('message-row', isUser ? 'user-row' : 'bot-row');
@@ -61,7 +57,6 @@ document.addEventListener('DOMContentLoaded', () => {
         chatWindow.scrollTop = chatWindow.scrollHeight;
     }
 
-    // Process Message Event and connect directly to HTTPS endpoints
     chatForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
@@ -71,14 +66,16 @@ document.addEventListener('DOMContentLoaded', () => {
         appendMessage(message, true);
         userInput.value = '';
 
-        // Target API Endpoint directly without needing any backend server
-        const targetUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${decryptedApiKey}`;
+        // API base URL endpoint
+        const targetUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
         try {
             const response = await fetch(targetUrl, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    // Correct required Google API Header format to pass browser CORS security restrictions
+                    'x-goog-api-key': decryptedApiKey 
                 },
                 body: JSON.stringify({
                     contents: [{
@@ -93,12 +90,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const botReply = data.candidates[0].content.parts[0].text;
                 appendMessage(botReply, false);
             } else {
-                const apiError = data.error ? data.error.message : "API configuration unexpected error.";
+                const apiError = data.error ? data.error.message : "Unexpected response validation format.";
                 appendMessage(`System Error: ${apiError}`, false);
             }
 
         } catch (error) {
-            appendMessage("Failed to reach processing systems. Verify network connectivity.", false);
+            appendMessage("Failed to reach processing systems. Verify network connectivity or check browser console logs.", false);
         }
     });
 });
